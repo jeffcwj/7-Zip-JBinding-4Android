@@ -1,0 +1,9 @@
+jdk:
+  - openjdk17
+
+before_install:
+  - sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
+
+install:
+  - bash ./gradlew :sevenzipjbinding:assembleRelease :sevenzipjbinding:publishReleasePublicationToMavenLocal --no-daemon --console=plain
+  - python3 scripts/verify_aar.py sevenzipjbinding/build/outputs/aar/sevenzipjbinding-release.aar "$ANDROID_HOME/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"

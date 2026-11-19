@@ -1,0 +1,56 @@
+name: Android 双架构发行核验
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [android-16kb]
+    tags: ['16.02-2.02-16kb.*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: 安装编译工具
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
+      - name: 编译并检查 Maven 制品
+        run: |
+          bash ./gradlew :sevenzipjbinding:assembleRelease :sevenzipjbinding:publishReleasePublicationToMavenLocal \
+            "-Dmaven.repo.local=$RUNNER_TEMP/sevenzip-maven" --no-daemon --console=plain
+          aar=sevenzipjbinding/build/outputs/aar/sevenzipjbinding-release.aar
+          cmp "$aar" "$RUNNER_TEMP/sevenzip-maven/net/sf/sevenzipjbinding/sevenzipjbinding/16.02-2.02-16kb.1/sevenzipjbinding-16.02-2.02-16kb.1.aar"
+          python3 scripts/verify_aar.py "$aar" "$ANDROID_HOME/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+      - name: 启用临时模拟器的硬件加速
+        run: |
+          test -c /dev/kvm
+          sudo chgrp "$(id -gn)" /dev/kvm
+          sudo chmod g+rw /dev/kvm
+      - name: 在 Android 中验证 ZIP64 原生解包
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          emulator-port: 5554
+          disable-animations: true
+          script: bash scripts/verify_zip64_android.sh "$RUNNER_TEMP/sevenzip-zip64" emulator-5554
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sevenzipjbinding-android-16kb
+          if-no-files-found: error
+          path: |
+            sevenzipjbinding/build/outputs/aar/sevenzipjbinding-release.aar
+            sevenzipjbinding/build/libs/*-sources.jar
+            LICENSE
+            License.txt

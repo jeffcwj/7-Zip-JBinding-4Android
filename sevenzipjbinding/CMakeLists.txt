@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.22)
 
 project(SevenZipJBinding)
 set(TARGET 7-Zip-JBinding)
@@ -360,6 +360,16 @@ add_library(${TARGET} SHARED
         )
 find_library(LOG-LIB
         log)
-set_target_properties(${TARGET} PROPERTIES LINK_FLAGS "-Wl,-z,defs -Wl,--no-undefined")
+set_target_properties(${TARGET} PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED YES
+        LINK_FLAGS "-Wl,-z,defs -Wl,--no-undefined"
+        )
+if(ANDROID)
+        target_link_options(${TARGET} PRIVATE
+                "-Wl,-z,max-page-size=16384"
+                "-Wl,-z,common-page-size=16384"
+                )
+endif()
 target_link_libraries(${TARGET}
         ${LOG-LIB})
