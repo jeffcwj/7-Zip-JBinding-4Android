@@ -34,7 +34,11 @@ jobs:
           bash ./gradlew :sevenzipjbinding:assembleRelease :sevenzipjbinding:publishReleasePublicationToMavenLocal \
             "-Dmaven.repo.local=$RUNNER_TEMP/sevenzip-maven" --no-daemon --console=plain
           aar=sevenzipjbinding/build/outputs/aar/sevenzipjbinding-release.aar
-          cmp "$aar" "$RUNNER_TEMP/sevenzip-maven/net/sf/sevenzipjbinding/sevenzipjbinding/16.02-2.02-16kb.1/sevenzipjbinding-16.02-2.02-16kb.1.aar"
+          # CI 使用独立 Maven 目录，要求只有一个发布制品，并与构建产物逐字节一致。
+          shopt -s nullglob
+          published=("$RUNNER_TEMP"/sevenzip-maven/net/sf/sevenzipjbinding/sevenzipjbinding/*/sevenzipjbinding-*.aar)
+          test "${#published[@]}" -eq 1
+          cmp "$aar" "${published[0]}"
           python3 scripts/verify_aar.py "$aar" "$ANDROID_HOME/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
       - name: 启用临时模拟器的硬件加速
         run: |

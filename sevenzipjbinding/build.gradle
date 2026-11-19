@@ -4,7 +4,7 @@ apply plugin: 'maven-publish'
 def jitpack = providers.environmentVariable('JITPACK').orNull == 'true'
 def publishedArtifact = jitpack ? providers.environmentVariable('ARTIFACT').get() : 'sevenzipjbinding'
 group = jitpack ? providers.environmentVariable('GROUP').get() : 'net.sf.sevenzipjbinding'
-version = jitpack ? providers.environmentVariable('VERSION').get() : '16.02-2.02-16kb.1'
+version = jitpack ? providers.environmentVariable('VERSION').get() : '16.02-2.02-16kb.2'
 
 // 将原始许可随 Maven 制品交付，使用独立路径避免宿主合并时同名冲突。
 def licenseResources = layout.buildDirectory.dir('generated/sevenzipLicenseResources')
